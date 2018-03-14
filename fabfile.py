@@ -51,11 +51,13 @@ def cluster_up(count=1):
     # In case additional commands are called after up
     _find_machines()
 
-
+@parallel
 def configure_machines():
-    run("sudo chown ubuntu:ubuntu /mnt")
     run("sudo usermod -aG docker ${USER}")
     put("class")
+    with cd("/mnt"):
+        run("wget -N https://bme230badmindiag811.blob.core.windows.net/data/tcga_target_gtex.h5") 
+    run("sudo chown ubuntu:ubuntu /mnt")
     # run("chmod -R +r-w class/")
 
 
