@@ -4,6 +4,7 @@ Tooling to spin up hosts running jupyter on Azure for BME230B
 import os
 import glob
 import json
+import datetime
 from fabric.api import env, local, run, sudo, runs_once, parallel, warn_only, cd, settings
 from fabric.operations import put, get
 
@@ -52,6 +53,7 @@ def cluster_up(count=1):
 
 
 def configure_machines():
+    run("sudo chown ubuntu:ubuntu /mnt")
     run("sudo usermod -aG docker ${USER}")
     put("class")
     # run("chmod -R +r-w class/")
@@ -73,6 +75,9 @@ def machines():
     for machine in zip(env.hostnames, env.hosts):
         print("{}/{}".format(machine[0], machine[1]))
 
+def ps():
+    run("docker ps")
+
 
 def jupyter_up():
     """ Launch a jupyter notebook server on each cluster machine """
@@ -86,7 +91,7 @@ def jupyter_up():
 		-p 80:8888 \
 		-v `echo ~`:/home/jovyan \
 		-v /mnt:/scratch \
-		jupyter/datascience-notebook start-notebook.sh \
+		robcurrie/jupyter start-notebook.sh \
 		--NotebookApp.password='sha1:c708a30ae9da:674e576d9a1b4c7fb421ea8b26e972cc63b93e59'
 	""", pty=False)
 
