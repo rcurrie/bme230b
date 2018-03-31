@@ -5,6 +5,7 @@ import os
 import glob
 import json
 import datetime
+import pprint
 from StringIO import StringIO
 from fabric.api import env, local, run, sudo, runs_once, parallel, warn_only, cd, settings
 from fabric.operations import put, get
@@ -24,7 +25,11 @@ def _find_machines():
                      if not env.hosts or m["MachineName"] in env.hosts]
     env.hosts = [local("docker-machine ip {}".format(m["MachineName"]), capture=True) for m in machines
                  if not env.hosts or m["MachineName"] in env.hosts]
-    env.key_filename = [m["SSHKeyPath"] for m in machines]
+    # env.key_filename = [m["SSHKeyPath"] for m in machines]
+    # Use single key due to https://github.com/UCSC-Treehouse/pipelines/issues/5
+    # env.key_filename = [m["SSHKeyPath"] for m in machines]
+    env.key_filename = "~/.ssh/id_rsa"
+
 
 
 _find_machines()
@@ -47,6 +52,8 @@ def cluster_up(count=1):
 		--azure-resource-group "bme230bstudents" \
               {}
               """.format(hostname))
+        local("cat ~/.ssh/id_rsa.pub" +
+              "| docker-machine ssh {} 'cat >> ~/.ssh/authorized_keys'".format(hostname))
 
     # In case additional commands are called after up
     _find_machines()
@@ -62,12 +69,12 @@ def configure_machines():
     run("mkdir -p /mnt/data /mnt/scratch")
     with cd("/mnt/data"):
         # run("wget -r -np -R 'index.html*' -N https://bme230badmindiag811.blob.core.windows.net/data/") 
-        run("wget -N https://bme230badmindiag811.blob.core.windows.net/data/tcga_target_gtex_train.h5") 
-        run("wget -N https://bme230badmindiag811.blob.core.windows.net/data/breast-cancer-wisconsin.data.csv") 
-        run("wget -N https://bme230badmindiag811.blob.core.windows.net/data/c2.cp.kegg.v6.1.symbols.gmt") 
+        run("wget -q -N https://bme230badmindiag811.blob.core.windows.net/data/tcga_target_gtex_train.h5") 
+        run("wget -q -N https://bme230badmindiag811.blob.core.windows.net/data/breast-cancer-wisconsin.data.csv") 
+        run("wget -q -N https://bme230badmindiag811.blob.core.windows.net/data/c2.cp.kegg.v6.1.symbols.gmt") 
     run("sudo chown ubuntu:ubuntu /mnt")
 
-    run("""docker pull robcurrie/jupyter""")
+    run("""sudo docker pull robcurrie/jupyter | grep -e 'Pulling from' -e Digest -e Status -e Error""")
     # run("chmod -R +r-w class/")
 
 
@@ -91,25 +98,27 @@ def machines():
         print("{}/{}".format(machine[0], machine[1]))
 
 def ps():
+    """ List dockers running on each machine """
     run("docker ps")
 
 
 def jupyter_up():
     """ Launch a jupyter notebook server on each cluster machine """
-    run("""
-	nohup docker run -d --name jupyter \
-		--user root \
-		-e JUPYTER_ENABLE_LAB=1 \
-		-e GRANT_SUDO=yes \
-		-e NB_UID=`id -u` \
-		-e NB_GID=`id -g` \
-		-p 80:8888 \
-		-v `echo ~`:/home/jovyan \
-		-v /mnt/data:/home/jovyan/data \
-		-v /mnt/scratch:/scratch/home/jovyan/data \
-		robcurrie/jupyter start-notebook.sh \
-		--NotebookApp.password='sha1:c708a30ae9da:674e576d9a1b4c7fb421ea8b26e972cc63b93e59'
-	""", pty=False)
+    with warn_only():
+        run("""
+            nohup docker run -d --name jupyter \
+                    --user root \
+                    -e JUPYTER_ENABLE_LAB=1 \
+                    -e GRANT_SUDO=yes \
+                    -e NB_UID=`id -u` \
+                    -e NB_GID=`id -g` \
+                    -p 80:8888 \
+                    -v `echo ~`:/home/jovyan \
+                    -v /mnt/data:/home/jovyan/data \
+                    -v /mnt/scratch:/scratch/home/jovyan/data \
+                    robcurrie/jupyter start-notebook.sh \
+                    --NotebookApp.password='sha1:c708a30ae9da:674e576d9a1b4c7fb421ea8b26e972cc63b93e59'
+            """, pty=False)
 
 def jupyter_down():
     """ Shutdown the jupyter notebook server on each cluster machine """
