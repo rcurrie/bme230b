@@ -70,8 +70,10 @@ def configure_machines():
     with cd("/mnt/data"):
         # run("wget -r -np -R 'index.html*' -N https://bme230badmindiag811.blob.core.windows.net/data/") 
         run("wget -q -N https://bme230badmindiag811.blob.core.windows.net/data/tcga_target_gtex_train.h5") 
+        run("wget -q -N https://bme230badmindiag811.blob.core.windows.net/data/tcga_mutation_train.h5") 
         run("wget -q -N https://bme230badmindiag811.blob.core.windows.net/data/breast-cancer-wisconsin.data.csv") 
         run("wget -q -N https://bme230badmindiag811.blob.core.windows.net/data/c2.cp.kegg.v6.1.symbols.gmt") 
+        run("wget -q -N https://bme230badmindiag811.blob.core.windows.net/data/tcga_mutation_test_unlabeled.h5") 
     run("sudo chown ubuntu:ubuntu /mnt")
 
     run("""sudo docker pull robcurrie/jupyter | grep -e 'Pulling from' -e Digest -e Status -e Error""")
@@ -133,7 +135,7 @@ def backhaul():
         paths = get("~/username.txt", fd)
         if paths.succeeded:
             username=fd.getvalue().strip()
-    print("username", username)
     local("mkdir -p /mnt/students/{}".format(username))
-    with cd("/mnt/students/{}".format(username)):
-        get("/home/ubuntu/*", "/mnt/students/{}/".format(username))
+    local("rsync -av --max-size=10m --delete ubuntu@{}:~/* /mnt/students/{}".format(env.host, username))
+    # with cd("/mnt/students/{}".format(username)):
+    #     get("/home/ubuntu/*", "/mnt/students/{}/".format(username))
