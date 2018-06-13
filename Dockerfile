@@ -21,7 +21,7 @@ RUN wget -qO- https://github.com/lomereiter/sambamba/releases/download/v0.6.7/sa
   | tar xj -C /usr/local/bin
 
 # The order of these is intentional to work around conflicts
-RUN conda install --yes pytorch torchvision -c pytorch
+RUN conda install --yes pytorch torchvision -c soumith
 
 RUN conda install --yes tensorflow keras
 
