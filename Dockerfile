@@ -20,7 +20,10 @@ RUN usermod -aG docker jovyan
 RUN wget -qO- https://github.com/lomereiter/sambamba/releases/download/v0.6.7/sambamba_v0.6.7_linux.tar.bz2 \
   | tar xj -C /usr/local/bin
 
-RUN conda install --yes pytorch torchvision -c pytorch
+# The order of these is intentional to work around conflicts
+# RUN conda install --yes pytorch torchvision -c pytorch
+# pytorch repo has older versions only...
+RUN conda install --yes pytorch torchvision -c soumith
 
 RUN conda install --yes tensorflow keras
 
