@@ -1,4 +1,4 @@
-FROM jupyter/datascience-notebook:92fe05d1e7e5
+FROM jupyter/datascience-notebook:96f2f777be6e
 
 USER root
 
@@ -33,5 +33,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN conda install --yes numpy==1.14.1 scikit-learn==0.19.0
 
-# USER jovyan
-USER root
+USER jovyan
